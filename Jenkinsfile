@@ -6,15 +6,11 @@ pipeline {
         maven 'maven3'
     }
     
-    environment {
-        SCANNER_HOME=tool 'sonar-scanner'
-    }
-    
     stages{
         
         stage("Git Checkout"){
             steps{
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/jaiswaladi246/Petclinic.git'
+		git branch: 'main', poll: false, url: 'https://github.com/Nelztacy/pet-clinic-app.git'
             }
         }
         
@@ -30,17 +26,16 @@ pipeline {
             }
         }
         
-        stage("Sonarqube Analysis "){
-            steps{
+        stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'sonar-scanner'
+            }
+            steps {
                 withSonarQubeEnv('sonar-server') {
                     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Petclinic \
                     -Dsonar.java.binaries=. \
                     -Dsonar.projectKey=Petclinic '''
-    
-                }
-            }
-        }
-        
+  
         stage("OWASP Dependency Check"){
             steps{
                 dependencyCheck additionalArguments: '--scan ./ --format HTML ', odcInstallation: 'DP'
@@ -57,11 +52,10 @@ pipeline {
         stage("Docker Build & Push"){
             steps{
                 script{
-                   withDockerRegistry(credentialsId: '58be877c-9294-410e-98ee-6a959d73b352', toolName: 'docker') {
-                        
+		   withDockerRegistry(credentialsId: 'DockerHub-Cred') {
                         sh "docker build -t image1 ."
-                        sh "docker tag image1 adijaiswal/pet-clinic123:latest "
-                        sh "docker push adijaiswal/pet-clinic123:latest "
+                        sh "docker tag image1 nelzone/pet-clinic-app:latest "
+                        sh "docker push nelzone/pet-clinic-app:latest "
                     }
                 }
             }
@@ -69,7 +63,7 @@ pipeline {
         
         stage("TRIVY"){
             steps{
-                sh " trivy image adijaiswal/pet-clinic123:latest"
+                sh " trivy image nelzone/pet-clinic-app:latest"
             }
         }
         
