@@ -2,8 +2,8 @@ pipeline {
     agent any 
     
     tools {
-        jdk 'jdk11'
-        maven 'maven3'
+        jdk 'jdk9'       // Updated JDK name
+        maven 'maven'    // Updated Maven name
     }
     
     stages {
