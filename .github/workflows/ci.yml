@@ -1,0 +1,117 @@
+name: petclinic-new2
+on:
+  workflow_dispatch:
+jobs:
+  Git_Checkout:
+    name: Git Checkout
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+      with:
+        repository: Nelztacy/pet-clinic-app
+  Compile:
+    runs-on: ubuntu-latest
+    needs: Git_Checkout
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: sh
+      shell: bash
+      run: mvn clean compile
+  Test_Cases:
+    name: Test Cases
+    runs-on: ubuntu-latest
+    needs: Compile
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: sh
+      shell: bash
+      run: mvn test
+  SonarQube_Analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    env:
+#       # This item has no matching transformer
+#       scannerHome: "${'sonar-scanner'}"
+    needs: Test_Cases
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # This item has no matching transformer
+#     - withSonarQubeEnv:
+#         isLiteral: true
+#         value: sonar-server
+  OWASP_Dependency_Check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    needs: SonarQube_Analysis
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # This item has no matching transformer
+#     - dependencyCheck:
+#       - key: additionalArguments
+#         value:
+#           isLiteral: true
+#           value: "--scan ./ --format HTML"
+#       - key: odcInstallation
+#         value:
+#           isLiteral: true
+#           value: DP
+#     # This item has no matching transformer
+#     - dependencyCheckPublisher:
+#       - key: pattern
+#         value:
+#           isLiteral: true
+#           value: "**/dependency-check-report.xml"
+  Build:
+    runs-on: ubuntu-latest
+    needs: OWASP_Dependency_Check
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: sh
+      shell: bash
+      run: mvn clean install
+  Docker_Build_Push:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: Build
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+#     # 'script' was not transformed because there is no suitable equivalent in GitHub Actions
+#     - name: script
+#       arguments:
+#       - key: scriptBlock
+#         value:
+#           isLiteral: true
+#           value: |-
+#             withDockerRegistry(credentialsId: 'DockerHub-Cred') {
+#                                     sh "docker build -t image1 ."
+#                                     sh "docker tag image1 nelzone/pet-clinic-app:latest"
+#                                     sh "docker push nelzone/pet-clinic-app:latest"
+#                                 }
+  TRIVY:
+    runs-on: ubuntu-latest
+    needs: Docker_Build_Push
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: sh
+      shell: bash
+      run: trivy image nelzone/pet-clinic-app:latest
+  Deploy_To_Tomcat:
+    name: Deploy To Tomcat
+    runs-on: ubuntu-latest
+    needs: TRIVY
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4.1.0
+    - name: sh
+      shell: bash
+      run: cp /var/lib/jenkins/workspace/CI-CD/target/petclinic.war /opt/apache-tomcat-9.0.65/webapps/
